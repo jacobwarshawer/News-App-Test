@@ -3,17 +3,28 @@
 }
 
 :root {
-  --color-red: #c41e3a;
-  --color-dark: #1a1a1a;
+  --color-dark: #111111;
+  --color-white: #ffffff;
   --color-gray-900: #111827;
   --color-gray-700: #374151;
   --color-gray-500: #6b7280;
   --color-gray-300: #d1d5db;
   --color-gray-100: #f3f4f6;
-  --color-white: #ffffff;
-  --color-bg: #f4f4f4;
+  --color-bg: #111111;
   --font-serif: Georgia, "Times New Roman", Times, serif;
   --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  /* category badge colors */
+  --cat-politics-bg: #f0eeff;
+  --cat-politics-text: #7c3aed;
+  --cat-technology-bg: #eff6ff;
+  --cat-technology-text: #2563eb;
+  --cat-world-bg: #f0fdf4;
+  --cat-world-text: #16a34a;
+  --cat-economy-bg: #fff7ed;
+  --cat-economy-text: #d97706;
+  --cat-science-bg: #ecfdf5;
+  --cat-science-text: #059669;
 }
 
 body {
@@ -38,4 +49,9 @@ a {
 img {
   display: block;
   max-width: 100%;
+}
+
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
 }

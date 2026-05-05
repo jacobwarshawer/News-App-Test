@@ -72,7 +72,7 @@ For now, the four astronauts begin an intensive 36-month training regimen that i
   {
     id: 4,
     title: "Federal Reserve Holds Rates Steady, Signals Cautious Path Ahead",
-    category: "Business",
+    category: "Economy",
     description:
       "The Federal Open Market Committee voted unanimously to hold the benchmark interest rate at 4.25%, citing mixed inflation data and global economic uncertainty as reasons for a measured approach.",
     content: `The Federal Reserve left its benchmark interest rate unchanged at 4.25% on Wednesday, as policymakers signaled they need more evidence that inflation is sustainably returning to their 2% target before making any further adjustments.
@@ -95,27 +95,27 @@ Futures markets are now pricing in a 62% probability of a single rate cut before
   },
   {
     id: 5,
-    title: "Championship Finals Draw Record Global Viewership of 1.2 Billion",
-    category: "Sports",
+    title: "Senate Committee Advances Sweeping Data Privacy Legislation",
+    category: "Politics",
     description:
-      "This year's championship final broke every viewership record in sports history, with an estimated 1.2 billion people tuning in across 190 countries and streaming platforms combining for over 400 million concurrent streams.",
-    content: `The final whistle had barely blown when the numbers started rolling in, and they were staggering: an estimated 1.2 billion people watched Sunday's championship final, making it the most-viewed sporting event in recorded history.
+      "A bipartisan Senate committee has approved a landmark data privacy bill that would impose strict limits on how companies collect and sell personal information, setting the stage for a full floor vote next month.",
+    content: `A bipartisan Senate committee voted 14-3 on Thursday to advance the American Data Privacy and Protection Act, the most comprehensive federal data privacy legislation in U.S. history, clearing a major hurdle on the bill's path to becoming law.
 
-The match drew audiences across 190 countries, with live ratings peaking at 847 million simultaneous viewers at the moment of the decisive goal in the 88th minute. Add in the 400 million-plus concurrent streams across digital platforms, and the total reach eclipsed the previous record set by the 2022 World Cup final by nearly 300 million.
+The legislation would give Americans the right to access, correct, and delete personal data held by companies, while imposing strict limits on the sale of sensitive information — including health data, precise geolocation, and financial records — to third parties without explicit user consent.
 
-"Numbers like this tell you something profound about what sport means to people," said tournament director Claudia Neves at a post-match press conference. "We didn't just have an audience — we had a moment shared by most of the world."
+"For too long, Americans have had no meaningful control over their own information," said Senator Patricia Cole, the bill's lead sponsor. "This legislation changes that. It puts people back in the driver's seat."
 
-The match itself delivered on every expectation. After 90 minutes of absorbing play, the deadlock was broken by a long-range strike from 22-year-old forward Mateo Rivera, whose acrobatic finish sent millions of fans in the stadium — and across the globe — into euphoria.
+The bill passed committee with support from both parties, a rare show of bipartisan unity on a tech-related issue. However, significant disagreements remain about the enforcement mechanism. Republican members secured an amendment limiting the Federal Trade Commission's fine authority, while consumer advocates pushed back on a provision that would preempt stronger state-level privacy laws, including California's CCPA.
 
-For streaming platforms, the event represented a watershed moment. Three major services jointly reported infrastructure strain at peak moments, with brief buffering incidents affecting an estimated 12 million viewers. Engineers at all three companies praised automated load-balancing systems for preventing an outright outage.
+Technology industry groups expressed measured support for the bill, noting that a single federal standard would be preferable to the patchwork of state regulations companies currently navigate. However, several major platforms lobbied heavily against the data minimization provisions, which would restrict collection of data not strictly necessary to deliver a service.
 
-Advertising data released Monday showed a 30-second spot during the final commanded an average price of $14.5 million, surpassing the Super Bowl's advertising rates for the first time. Brands that secured placements reported a combined 2.8 billion social media impressions in the 24 hours following the match.
+Civil liberties organizations praised the committee vote but warned that the preemption clause could ultimately weaken protections in states that have moved further than the federal baseline. A coalition of state attorneys general sent a letter to the committee earlier this week urging lawmakers to remove the provision.
 
-For Rivera, who turns 23 next month, the moment caps a whirlwind season. His agent confirmed Monday morning that three top clubs have already made formal inquiries about a summer transfer.`,
-    author: "Marcus Thompson",
+The full Senate vote is expected in June. The House has its own privacy bill in committee, and significant differences between the two chambers' approaches will need to be reconciled before anything reaches the President's desk.`,
+    author: "Rachel Torres",
     date: "May 1, 2026",
-    readTime: "4 min read",
-    imageUrl: "https://picsum.photos/seed/sportschamp/800/450",
+    readTime: "5 min read",
+    imageUrl: "https://picsum.photos/seed/dataprivacy/800/450",
   },
 ];
 

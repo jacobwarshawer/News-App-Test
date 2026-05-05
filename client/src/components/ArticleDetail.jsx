@@ -57,7 +57,7 @@ function ArticleDetail() {
       </Link>
 
       <header className="article-header">
-        <span className="category-badge">{article.category}</span>
+        <span className={`category-badge badge-${article.category.toLowerCase()}`}>{article.category}</span>
         <h1 className="article-title">{article.title}</h1>
         <div className="article-byline">
           <span>By <strong>{article.author}</strong></span>

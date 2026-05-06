@@ -1,28 +1,102 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ArticleCard from "./ArticleCard";
 
 const CATEGORIES = ["All", "Politics", "Technology", "World", "Economy", "Science"];
-const DETAIL_LEVELS = ["Regular", "Simple", "Complex"];
+const READING_LEVELS = ["Neutral", "Simple", "In-depth"];
 
-function badgeClass(category) {
-  return `category-badge badge-${category.toLowerCase()}`;
+function perspectiveLabel(p) {
+  if (p < 0.20) return "Left-leaning";
+  if (p < 0.40) return "Center-left";
+  if (p < 0.60) return "Balanced";
+  if (p < 0.80) return "Center-right";
+  return "Right-leaning";
 }
 
-function perspectiveLabel(value) {
-  if (value < 30) return "Left-leaning";
-  if (value > 70) return "Right-leaning";
-  return "Balanced";
+function tagClass(category) {
+  return `wr-tag wr-tag--${category.toLowerCase()}`;
 }
 
-function HomePage() {
+function ControlBar({ category, setCategory, reading, setReading, perspective, setPerspective }) {
+  const trackRef = useRef(null);
+  const drag = useRef(false);
+
+  const onTrack = (e) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    setPerspective(x);
+  };
+
+  useEffect(() => {
+    const up = () => (drag.current = false);
+    window.addEventListener("mouseup", up);
+    return () => window.removeEventListener("mouseup", up);
+  }, []);
+
+  return (
+    <section className="wr-controls" aria-label="Reader controls">
+      <div className="wr-controls__row">
+        <div className="wr-controls__label">Category</div>
+        <div className="wr-controls__field">
+          <div className="wr-seg">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                className={c === category ? "is-active" : ""}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="wr-controls__row">
+        <div className="wr-controls__label">Reading as</div>
+        <div className="wr-controls__field">
+          <div className="wr-seg">
+            {READING_LEVELS.map((r) => (
+              <button
+                key={r}
+                className={r === reading ? "is-active" : ""}
+                onClick={() => setReading(r)}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="wr-controls__row">
+        <div className="wr-controls__label">Perspective</div>
+        <div className="wr-controls__field">
+          <div className="wr-slider">
+            <span className="wr-slider__end">Left</span>
+            <div
+              className="wr-slider__track"
+              ref={trackRef}
+              onMouseDown={(e) => { drag.current = true; onTrack(e); }}
+              onMouseMove={(e) => { if (drag.current) onTrack(e); }}
+              onClick={onTrack}
+            >
+              <div className="wr-slider__fill" style={{ width: `${perspective * 100}%` }} />
+              <div className="wr-slider__thumb" style={{ left: `${perspective * 100}%` }} />
+            </div>
+            <span className="wr-slider__end">Right</span>
+            <span className="wr-slider__pill">{perspectiveLabel(perspective)}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HomePage({ reading, setReading, openAsk }) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [detailLevel, setDetailLevel] = useState("Regular");
-  const [perspective, setPerspective] = useState(50);
+  const [category, setCategory] = useState("All");
+  const [perspective, setPerspective] = useState(0.5);
 
   const navigate = useNavigate();
 
@@ -32,138 +106,74 @@ function HomePage() {
         if (!res.ok) throw new Error("Failed to load articles");
         return res.json();
       })
-      .then((data) => {
-        setArticles(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+      .then((data) => { setArticles(data); setLoading(false); })
+      .catch((err) => { setError(err.message); setLoading(false); });
   }, []);
 
-  if (loading) {
-    return (
-      <div className="loading-state">
-        <div className="spinner" />
-        Loading latest news...
-      </div>
-    );
-  }
+  if (loading) return <div className="loading-state"><div className="spinner" />Loading latest news…</div>;
+  if (error)   return <div className="error-state">Unable to load articles: {error}</div>;
 
-  if (error) {
-    return <div className="error-state">Unable to load articles: {error}</div>;
-  }
-
-  const filtered =
-    activeCategory === "All"
-      ? articles
-      : articles.filter((a) => a.category === activeCategory);
-
-  const [featured, ...rest] = filtered;
+  const filtered = category === "All" ? articles : articles.filter((a) => a.category === category);
+  const [hero, ...rest] = filtered;
 
   return (
-    <div className="home-page">
-      {/* Filter Panel */}
-      <div className="filter-panel">
-        {/* Category */}
-        <div className="filter-row">
-          <span className="filter-row-label">Category</span>
-          <div className="filter-buttons">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                className={`filter-btn${activeCategory === cat ? " active" : ""}`}
-                onClick={() => setActiveCategory(cat)}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
+    <>
+      <ControlBar
+        category={category} setCategory={setCategory}
+        reading={reading}   setReading={setReading}
+        perspective={perspective} setPerspective={setPerspective}
+      />
 
-        {/* Detail level */}
-        <div className="filter-row">
-          <span className="filter-row-label">Detail level</span>
-          <div className="filter-buttons">
-            {DETAIL_LEVELS.map((level) => (
-              <button
-                key={level}
-                className={`filter-btn${detailLevel === level ? " active" : ""}`}
-                onClick={() => setDetailLevel(level)}
-              >
-                {level}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Perspective slider */}
-        <div className="filter-row">
-          <span className="filter-row-label">Perspective</span>
-          <div className="slider-wrap">
-            <span className="slider-end-label">Left</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={perspective}
-              onChange={(e) => setPerspective(Number(e.target.value))}
-            />
-            <span className="slider-end-label">Right</span>
-          </div>
-          <span className="perspective-value">{perspectiveLabel(perspective)}</span>
-        </div>
-      </div>
-
-      {/* TOP STORY */}
-      {featured ? (
-        <section>
-          <div className="section-label">Top Story</div>
-          <article
-            className="hero-article"
-            onClick={() => navigate(`/article/${featured.id}`)}
-          >
-            <div className="hero-image">
-              <div className="hero-image-circle" />
-            </div>
-            <div className="hero-body">
-              <span className={badgeClass(featured.category)}>{featured.category}</span>
-              <h2 className="hero-title">{featured.title}</h2>
-              <p className="hero-desc">{featured.description}</p>
-              <div className="hero-footer">
-                <span className="hero-meta-text">
-                  AI generated &middot; {detailLevel} &middot; Just now
+      {hero ? (
+        <>
+          <div className="wr-eyebrow">Top story</div>
+          <article className="wr-hero" onClick={() => navigate(`/article/${hero.id}`)}>
+            <div className="wr-hero__image" aria-hidden="true" />
+            <div className="wr-hero__body">
+              <span className={tagClass(hero.category)}>{hero.category}</span>
+              <h1>{hero.title}</h1>
+              <p>{hero.description}</p>
+              <div className="wr-hero__foot">
+                <span className="wr-card__meta">
+                  AI generated · {reading} · Just now
                 </span>
                 <button
-                  className="ask-claude-btn"
-                  onClick={(e) => e.stopPropagation()}
+                  className="wr-ask"
+                  onClick={(e) => { e.stopPropagation(); openAsk(hero); }}
                 >
-                  <span className="claude-dot" />
-                  Ask Claude about this
+                  <span className="wr-ask__dot" />
+                  Ask Brief AI about this
                 </button>
               </div>
             </div>
           </article>
-        </section>
+        </>
       ) : (
-        <div className="loading-state" style={{ color: "#888" }}>
+        <div className="loading-state" style={{ paddingTop: 40 }}>
           No articles found for this category.
         </div>
       )}
 
-      {/* MORE STORIES */}
       {rest.length > 0 && (
-        <section>
-          <div className="section-label">More Stories</div>
-          <div className="articles-grid">
-            {rest.map((article) => (
-              <ArticleCard key={article.id} article={article} detailLevel={detailLevel} />
+        <>
+          <div className="wr-eyebrow">More stories</div>
+          <div className="wr-grid">
+            {rest.map((a) => (
+              <ArticleCard key={a.id} article={a} reading={reading} openAsk={openAsk} />
             ))}
           </div>
-        </section>
+        </>
       )}
-    </div>
+
+      <footer className="wr-footer">
+        <span>© 2026 The DailyBrief · All AI-generated stories are reviewed against verified sources.</span>
+        <div className="wr-footer__links">
+          <a href="#">About</a>
+          <a href="#">Sources</a>
+          <a href="#">Editorial standards</a>
+        </div>
+      </footer>
+    </>
   );
 }
 

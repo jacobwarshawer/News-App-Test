@@ -1,57 +1,109 @@
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+*, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --color-dark: #111111;
-  --color-white: #ffffff;
-  --color-gray-900: #111827;
-  --color-gray-700: #374151;
-  --color-gray-500: #6b7280;
-  --color-gray-300: #d1d5db;
-  --color-gray-100: #f3f4f6;
-  --color-bg: #111111;
-  --font-serif: Georgia, "Times New Roman", Times, serif;
-  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* Paper */
+  --paper-0: #ffffff;
+  --paper-1: #faf7f2;
+  --paper-2: #f4efe6;
+  --paper-3: #ece5d6;
 
-  /* category badge colors */
-  --cat-politics-bg: #f0eeff;
-  --cat-politics-text: #7c3aed;
-  --cat-technology-bg: #eff6ff;
-  --cat-technology-text: #2563eb;
-  --cat-world-bg: #f0fdf4;
-  --cat-world-text: #16a34a;
-  --cat-economy-bg: #fff7ed;
-  --cat-economy-text: #d97706;
-  --cat-science-bg: #ecfdf5;
-  --cat-science-text: #059669;
+  /* Ink */
+  --ink-0: #0e0d0b;
+  --ink-1: #1a1814;
+  --ink-2: #4a4640;
+  --ink-3: #7a746a;
+  --ink-4: #a8a195;
+
+  /* Red accent */
+  --red-500: #c1272d;
+  --red-600: #a31e23;
+
+  /* Violet — AI surfaces */
+  --violet-50:  #f1eefb;
+  --violet-100: #e1d9f5;
+  --violet-300: #a999e0;
+  --violet-500: #5a47b0;
+  --violet-600: #483890;
+  --violet-700: #352a70;
+
+  /* Tags */
+  --tag-politics-bg: #ece5fb; --tag-politics-fg: #4226a8;
+  --tag-tech-bg:     #d9e6ff; --tag-tech-fg:     #0d3a8a;
+  --tag-world-bg:    #d2ead7; --tag-world-fg:    #0f5a36;
+  --tag-economy-bg:  #fadbb8; --tag-economy-fg:  #7a3a08;
+  --tag-science-bg:  #cfe9e2; --tag-science-fg:  #0d5546;
+  --tag-culture-bg:  #fbdfdb; --tag-culture-fg:  #8a151a;
+
+  /* Surfaces */
+  --surface-overlay: rgba(14, 13, 11, 0.55);
+
+  /* Foreground aliases */
+  --fg-1: var(--ink-0);
+  --fg-2: var(--ink-1);
+  --fg-3: var(--ink-2);
+  --fg-4: var(--ink-3);
+  --fg-5: var(--ink-4);
+
+  /* Borders */
+  --border-hair: rgba(14, 13, 11, 0.10);
+  --border-rule: rgba(14, 13, 11, 0.18);
+
+  /* Shadows */
+  --shadow-card:  0 1px 0 rgba(14,13,11,0.04), 0 1px 3px rgba(14,13,11,0.06);
+  --shadow-pop:   0 4px 12px rgba(14,13,11,0.08), 0 1px 2px rgba(14,13,11,0.06);
+  --shadow-modal: 0 24px 48px rgba(14,13,11,0.18), 0 2px 6px rgba(14,13,11,0.10);
+
+  /* Radii */
+  --r-xs:   2px;
+  --r-sm:   4px;
+  --r-md:   6px;
+  --r-lg:   10px;
+  --r-pill: 999px;
+
+  /* Fonts */
+  --font-sans:  "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Type scale */
+  --type-h1:       700 40px/1.10 var(--font-sans);
+  --type-h2:       700 28px/1.18 var(--font-sans);
+  --type-h3:       600 20px/1.30 var(--font-sans);
+  --type-lede:     400 20px/1.55 var(--font-serif);
+  --type-body:     400 17px/1.65 var(--font-serif);
+  --type-body-sm:  400 15px/1.6  var(--font-serif);
+  --type-ui:       500 14px/1.4  var(--font-sans);
+  --type-ui-sm:    500 13px/1.4  var(--font-sans);
+  --type-button:   600 14px/1.0  var(--font-sans);
+  --type-eyebrow:  600 11px/1.2  var(--font-sans);
+  --type-meta:     400 13px/1.4  var(--font-sans);
+  --type-mono:     400 13px/1.5  var(--font-mono);
+
+  /* Tracking */
+  --tracking-eyebrow: 0.10em;
+  --tracking-tight:   -0.01em;
+  --tracking-tighter: -0.02em;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast:  120ms;
+  --dur-base:  200ms;
+  --dur-slow:  320ms;
 }
 
 body {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-gray-900);
+  background: var(--paper-1);
+  color: var(--fg-2);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-img {
-  display: block;
-  max-width: 100%;
-}
-
-button {
-  font-family: var(--font-sans);
-  cursor: pointer;
-}
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+button { font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }

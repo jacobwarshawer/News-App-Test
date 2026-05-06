@@ -1,29 +1,28 @@
 import { useNavigate } from "react-router-dom";
 
-function badgeClass(category) {
-  return `category-badge badge-${category.toLowerCase()}`;
-}
-
-function ArticleCard({ article, detailLevel = "Regular" }) {
+function ArticleCard({ article, reading, openAsk }) {
   const navigate = useNavigate();
 
   return (
     <article
-      className="article-card"
+      className="wr-card"
       onClick={() => navigate(`/article/${article.id}`)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && navigate(`/article/${article.id}`)}
     >
-      <span className={badgeClass(article.category)}>{article.category}</span>
-      <h3 className="card-title">{article.title}</h3>
-      <div className="card-footer">
-        <span className="card-meta">AI generated &middot; {detailLevel}</span>
+      <span className={`wr-tag wr-tag--${article.category.toLowerCase()}`}>
+        {article.category}
+      </span>
+      <h3>{article.title}</h3>
+      <span className="wr-card__meta">AI generated · {reading}</span>
+      <div className="wr-card__foot">
+        <span />
         <button
-          className="ask-claude-small"
-          onClick={(e) => e.stopPropagation()}
+          className="wr-ask"
+          onClick={(e) => { e.stopPropagation(); openAsk(article); }}
         >
-          Ask Claude ↗
+          Ask Brief AI <span aria-hidden="true">↗</span>
         </button>
       </div>
     </article>

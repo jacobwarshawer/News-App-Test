@@ -128,7 +128,11 @@ function HomePage({ reading, setReading, openAsk }) {
         <>
           <div className="wr-eyebrow">Top story</div>
           <article className="wr-hero" onClick={() => navigate(`/article/${hero.id}`)}>
-            <div className="wr-hero__image" aria-hidden="true" />
+            <div
+              className="wr-hero__image"
+              style={{ backgroundImage: `url(${hero.imageUrl})` }}
+              aria-hidden="true"
+            />
             <div className="wr-hero__body">
               <span className={tagClass(hero.category)}>{hero.category}</span>
               <h1>{hero.title}</h1>

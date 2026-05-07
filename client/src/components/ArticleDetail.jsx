@@ -6,6 +6,9 @@ const FOLLOW_UPS = [
   "What's the background?",
   "Who are the key players?",
   "Read in 1 minute",
+  "How does this connect to other issues?",
+  "What questions should I be asking?",
+  "Further reading",
 ];
 
 function ArticleDetail({ reading, openAsk }) {

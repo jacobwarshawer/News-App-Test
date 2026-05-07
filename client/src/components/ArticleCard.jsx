@@ -11,6 +11,11 @@ function ArticleCard({ article, reading, openAsk }) {
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && navigate(`/article/${article.id}`)}
     >
+      <div
+        className="wr-card__image"
+        style={{ backgroundImage: `url(${article.imageUrl})` }}
+        aria-hidden="true"
+      />
       <span className={`wr-tag wr-tag--${article.category.toLowerCase()}`}>
         {article.category}
       </span>

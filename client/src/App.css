@@ -175,18 +175,11 @@
 }
 .wr-hero:hover { box-shadow: var(--shadow-pop); }
 .wr-hero__image {
-  aspect-ratio: 2.6;
-  background: linear-gradient(135deg, #d6dff0 0%, #c8d8e8 35%, #d2d8ec 70%, #c4ccdf 100%);
-  position: relative;
-  display: grid;
-  place-items: center;
-}
-.wr-hero__image::after {
-  content: "";
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: rgba(90, 71, 176, 0.5);
-  filter: blur(2px);
+  aspect-ratio: 5;
+  background-color: var(--paper-3);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .wr-hero__body { padding: 24px; }
 .wr-hero h1 {
@@ -205,6 +198,16 @@
 
 /* ── Story grid ──────────────────────────── */
 .wr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.wr-card__image {
+  margin: -22px -22px 0;
+  aspect-ratio: 2.5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--paper-3);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+}
+
 .wr-card {
   background: var(--paper-0);
   border: 1px solid var(--border-hair);

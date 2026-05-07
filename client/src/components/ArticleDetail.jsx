@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 const FOLLOW_UPS = [
@@ -11,13 +11,42 @@ const FOLLOW_UPS = [
   "Further reading",
 ];
 
-function ArticleDetail({ reading, openAsk }) {
+const READING_LEVELS = ["Neutral", "Simple", "In-depth"];
+
+function perspectiveLabel(p) {
+  if (p < 0.20) return "Left-leaning";
+  if (p < 0.40) return "Center-left";
+  if (p < 0.60) return "Balanced";
+  if (p < 0.80) return "Center-right";
+  return "Right-leaning";
+}
+
+function ArticleDetail({ openAsk }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [askInput, setAskInput] = useState("");
+
+  // Article-local settings, independent from the home page
+  const [reading, setReading] = useState("Neutral");
+  const [perspective, setPerspective] = useState(0.5);
+
+  const trackRef = useRef(null);
+  const drag = useRef(false);
+
+  const onTrack = (e) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    setPerspective(x);
+  };
+
+  useEffect(() => {
+    const up = () => (drag.current = false);
+    window.addEventListener("mouseup", up);
+    return () => window.removeEventListener("mouseup", up);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -84,6 +113,7 @@ function ArticleDetail({ reading, openAsk }) {
           </p>
         )}
 
+        {/* Ask a follow-up */}
         <div className="wr-inline-ask">
           <h4>Ask a follow-up</h4>
           <div className="wr-composer">
@@ -101,6 +131,45 @@ function ArticleDetail({ reading, openAsk }) {
                 {q}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Change article settings */}
+        <div className="wr-inline-ask">
+          <h4>Change article</h4>
+          <div className="wr-inline-controls">
+            <div className="wr-inline-controls__row">
+              <span className="wr-inline-controls__label">Reading as</span>
+              <div className="wr-seg">
+                {READING_LEVELS.map((level) => (
+                  <button
+                    key={level}
+                    className={reading === level ? "is-active" : ""}
+                    onClick={() => setReading(level)}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="wr-inline-controls__row">
+              <span className="wr-inline-controls__label">Perspective</span>
+              <div className="wr-slider">
+                <span className="wr-slider__end">Left</span>
+                <div
+                  className="wr-slider__track"
+                  ref={trackRef}
+                  onMouseDown={(e) => { drag.current = true; onTrack(e); }}
+                  onMouseMove={(e) => { if (drag.current) onTrack(e); }}
+                  onClick={onTrack}
+                >
+                  <div className="wr-slider__fill" style={{ width: `${perspective * 100}%` }} />
+                  <div className="wr-slider__thumb" style={{ left: `${perspective * 100}%` }} />
+                </div>
+                <span className="wr-slider__end">Right</span>
+                <span className="wr-slider__pill">{perspectiveLabel(perspective)}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

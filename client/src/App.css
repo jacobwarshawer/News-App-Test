@@ -364,6 +364,24 @@
 }
 .wr-chip:hover { background: var(--violet-50); border-color: var(--violet-300); color: var(--violet-700); }
 
+/* ── Inline article controls (Change article box) ── */
+.wr-inline-controls { display: flex; flex-direction: column; margin-top: 4px; }
+.wr-inline-controls__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-hair);
+  flex-wrap: wrap;
+}
+.wr-inline-controls__row:last-child { border-bottom: none; padding-bottom: 0; }
+.wr-inline-controls__label {
+  font: var(--type-ui-sm);
+  color: var(--fg-3);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
 /* ── Ask Panel (slide-in) ────────────────── */
 .wr-ask-panel {
   position: fixed;

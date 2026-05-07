@@ -36,9 +36,7 @@ function App() {
             />
             <Route
               path="/article/:id"
-              element={
-                <ArticleDetail reading={reading} openAsk={openAsk} />
-              }
+              element={<ArticleDetail openAsk={openAsk} />}
             />
           </Routes>
         </div>

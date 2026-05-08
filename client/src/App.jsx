@@ -23,22 +23,24 @@ function App() {
       <div className="app">
         <div className="wr-shell">
           <Header />
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <HomePage
-                  reading={reading}
-                  setReading={setReading}
-                  openAsk={openAsk}
-                />
-              }
-            />
-            <Route
-              path="/article/:id"
-              element={<ArticleDetail openAsk={openAsk} />}
-            />
-          </Routes>
+          <div className="wr-shell__body">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <HomePage
+                    reading={reading}
+                    setReading={setReading}
+                    openAsk={openAsk}
+                  />
+                }
+              />
+              <Route
+                path="/article/:id"
+                element={<ArticleDetail openAsk={openAsk} />}
+              />
+            </Routes>
+          </div>
         </div>
         <AskPanel
           open={askOpen}

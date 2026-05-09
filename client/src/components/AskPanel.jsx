@@ -1,34 +1,89 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+
+const GREETING = "I've read this story. Ask me anything about it — I'll cite the sections I'm drawing from.";
 
 function AskPanel({ open, story, seed, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const msgsEndRef = useRef(null);
+
+  useEffect(() => {
+    msgsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     if (!open) return;
-    if (seed) {
-      setMessages([
-        { role: "user", text: seed },
-        { role: "ai", text: "Based on the article, here's what I found. The reporting draws on multiple sources and I've highlighted the key details relevant to your question. Would you like me to dig deeper into any specific aspect?" },
-      ]);
-    } else {
-      setMessages([
-        { role: "ai", text: "I've read this story. Ask me anything about it — I'll cite the sections I'm drawing from." },
-      ]);
-    }
     setInput("");
+    if (seed && story) {
+      const initial = [{ role: "user", text: seed }];
+      setMessages([...initial, { role: "ai", text: "" }]);
+      streamChat(initial, story.id);
+    } else {
+      setMessages([]);
+    }
   }, [open, seed, story]);
+
+  const streamChat = async (msgs, articleId) => {
+    setStreaming(true);
+    try {
+      const res = await fetch(`/api/articles/${articleId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: msgs }),
+      });
+      if (!res.ok) throw new Error("Request failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let aiText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const { text: chunk } = JSON.parse(payload);
+            if (chunk) {
+              aiText += chunk;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: "ai", text: aiText };
+                return updated;
+              });
+            }
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    } catch {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "ai", text: "Sorry, I couldn't get a response. Please try again." };
+        return updated;
+      });
+    } finally {
+      setStreaming(false);
+    }
+  };
 
   const send = (e) => {
     e?.preventDefault?.();
     const q = input.trim();
-    if (!q) return;
-    setMessages((m) => [
-      ...m,
-      { role: "user", text: q },
-      { role: "ai", text: "Based on the available reporting, this is what the sources indicate. The article cites verified information from multiple outlets covering this story. Want me to explore a different angle?" },
-    ]);
+    if (!q || streaming || !story) return;
+
+    const newMessages = [...messages, { role: "user", text: q }];
+    setMessages([...newMessages, { role: "ai", text: "" }]);
     setInput("");
+    streamChat(newMessages, story.id);
   };
 
   return (
@@ -55,15 +110,27 @@ function AskPanel({ open, story, seed, onClose }) {
         )}
 
         <div className="wr-ask-panel__msgs">
+          {messages.length === 0 && (
+            <div className="wr-msg">
+              <div className="wr-msg__av" />
+              <div className="wr-msg__body">
+                <div className="wr-msg__lbl">Brief AI</div>
+                <div className="wr-msg__txt">{GREETING}</div>
+              </div>
+            </div>
+          )}
           {messages.map((m, i) => (
             <div key={i} className={`wr-msg ${m.role === "user" ? "is-user" : ""}`}>
               <div className="wr-msg__av" />
               <div className="wr-msg__body">
                 <div className="wr-msg__lbl">{m.role === "user" ? "You" : "Brief AI"}</div>
-                <div className="wr-msg__txt">{m.text}</div>
+                <div className="wr-msg__txt">
+                  {m.text || (streaming && i === messages.length - 1 ? "…" : "")}
+                </div>
               </div>
             </div>
           ))}
+          <div ref={msgsEndRef} />
         </div>
 
         <div className="wr-ask-panel__compose">
@@ -72,8 +139,9 @@ function AskPanel({ open, story, seed, onClose }) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a follow-up…"
+              disabled={streaming}
             />
-            <button type="submit">Ask</button>
+            <button type="submit" disabled={streaming}>Ask</button>
           </form>
         </div>
       </aside>

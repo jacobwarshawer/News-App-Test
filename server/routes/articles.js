@@ -86,6 +86,50 @@ router.get("/", (req, res) => {
   res.json(summaries);
 });
 
+router.post("/:id/chat", async (req, res) => {
+  const article = articles.find((a) => a.id === parseInt(req.params.id));
+  if (!article) return res.status(404).json({ error: "Article not found" });
+
+  const { messages } = req.body;
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: "messages array is required" });
+  }
+
+  const claudeMessages = messages.map((m) => ({
+    role: m.role === "ai" ? "assistant" : "user",
+    content: m.text,
+  }));
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  try {
+    const stream = client.messages.stream({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system: `You are Brief AI, an assistant for The Daily Brief news publication. Help readers understand the following article. Answer questions as accurately as you can. Keep responses concise. Do not invent facts not present in the article, but you can use whatever knowledge you do have. Be conservative in what information you give. If you are being speculative, inform the user of that. .\n\nArticle: "${article.title}"\n\n${article.content}`,
+      messages: claudeMessages,
+    });
+
+    stream.on("text", (text) => {
+      res.write(`data: ${JSON.stringify({ text })}\n\n`);
+    });
+
+    await stream.finalMessage();
+    res.write("data: [DONE]\n\n");
+    res.end();
+  } catch (err) {
+    console.error("Chat API error:", err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to get response" });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: "Something went wrong" })}\n\n`);
+      res.end();
+    }
+  }
+});
+
 router.get("/:id", async (req, res) => {
   console.log(`GET /api/articles/${req.params.id} depth=${req.query.depth} perspective=${req.query.perspective}`);
   const article = articles.find((a) => a.id === parseInt(req.params.id));

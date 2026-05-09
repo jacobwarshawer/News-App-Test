@@ -14,6 +14,67 @@ const FOLLOW_UPS = [
 const READING_LEVELS = ["Low", "Medium", "High"];
 const PERSPECTIVE_OPTIONS = ["Left", "Center", "Right"];
 
+const DepthIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+    <path d="M1 3h11M1 6.5h8M1 10h5" />
+  </svg>
+);
+
+const PerspectiveIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 6.5h11M4 3L1 6.5l3 3.5M9 3l3 3.5-3 3.5" />
+  </svg>
+);
+
+const SuggestIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 1.5L7.8 5.2L11.5 6.5L7.8 7.8L6.5 11.5L5.2 7.8L1.5 6.5L5.2 5.2Z" />
+  </svg>
+);
+
+function ArticleDropdown({ label, icon, options, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div className="wr-ctrl-drop" ref={ref}>
+      <button
+        className={`wr-ctrl-drop__btn${open ? " is-open" : ""}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {icon}
+        <span className="wr-ctrl-drop__label">{label}</span>
+        {value !== null && <span className="wr-ctrl-drop__sep">·</span>}
+        {value !== null && <span className="wr-ctrl-drop__val">{value}</span>}
+        <svg className="wr-ctrl-drop__chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 3.5l3 3 3-3" />
+        </svg>
+      </button>
+      {open && (
+        <div className="wr-ctrl-drop__menu">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              className={`wr-ctrl-drop__item${value === opt ? " is-active" : ""}`}
+              onClick={() => { onChange(opt); setOpen(false); }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ArticleDetail({ openAsk }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -21,13 +82,13 @@ function ArticleDetail({ openAsk }) {
   const [loading, setLoading] = useState(true);
   const [variantLoading, setVariantLoading] = useState(false);
   const [error, setError] = useState(null);
-  // Article-local settings, independent from the home page
   const [reading, setReading] = useState("Medium");
   const [perspective, setPerspective] = useState("Center");
 
   // Inline chat state
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
+  const [chatStreaming, setChatStreaming] = useState(false);
   const msgsEndRef = useRef(null);
   const mainRef = useRef(null);
   const prevIdRef = useRef(null);
@@ -78,28 +139,95 @@ function ArticleDetail({ openAsk }) {
 
   const paragraphs = article.content.split("\n\n").map((p) => p.trim()).filter(Boolean);
 
-  const sendChat = (text) => {
+  const sendChat = async (text) => {
     const q = (text !== undefined ? text : chatInput).trim();
-    if (!q) return;
-    setChatMessages((msgs) => [
-      ...msgs,
-      { role: "user", text: q },
-      { role: "ai", text: "Based on the available reporting, this is what the sources indicate. The article cites verified information from multiple outlets covering this story. Want me to explore a different angle?" },
-    ]);
+    if (!q || chatStreaming) return;
+
+    const newMessages = [...chatMessages, { role: "user", text: q }];
+    setChatMessages([...newMessages, { role: "ai", text: "" }]);
     setChatInput("");
+    setChatStreaming(true);
+
+    try {
+      const res = await fetch(`/api/articles/${id}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages }),
+      });
+      if (!res.ok) throw new Error("Request failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let aiText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const { text: chunk } = JSON.parse(payload);
+            if (chunk) {
+              aiText += chunk;
+              setChatMessages((msgs) => {
+                const updated = [...msgs];
+                updated[updated.length - 1] = { role: "ai", text: aiText };
+                return updated;
+              });
+            }
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    } catch {
+      setChatMessages((msgs) => {
+        const updated = [...msgs];
+        updated[updated.length - 1] = { role: "ai", text: "Sorry, I couldn't get a response. Please try again." };
+        return updated;
+      });
+    } finally {
+      setChatStreaming(false);
+    }
   };
 
   return (
     <article className="wr-article">
-      <button className="wr-article__back" onClick={() => navigate("/")}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-        Back to today
-      </button>
-
       <div className="wr-article__layout">
-        <div className="wr-article__main" ref={mainRef} style={{ opacity: variantLoading ? 0.45 : 1, transition: "opacity 0.15s ease" }}>
+        <div className="wr-article__left">
+          <div className="wr-article__topbar">
+            <button className="wr-article__back" onClick={() => navigate("/")}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              Back to today
+            </button>
+            <div className="wr-article__topbar-div" />
+            <div className="wr-article__controls">
+              <ArticleDropdown
+                label="Depth"
+                icon={<DepthIcon />}
+                options={READING_LEVELS}
+                value={reading}
+                onChange={setReading}
+              />
+              <ArticleDropdown
+                label="Perspective"
+                icon={<PerspectiveIcon />}
+                options={PERSPECTIVE_OPTIONS}
+                value={perspective}
+                onChange={setPerspective}
+              />
+            </div>
+          </div>
+
+          <div className="wr-article__main" ref={mainRef} style={{ opacity: variantLoading ? 0.45 : 1, transition: "opacity 0.15s ease" }}>
           <span className={`wr-tag wr-tag--${article.category.toLowerCase()}`}>
             {article.category}
           </span>
@@ -118,72 +246,37 @@ function ArticleDetail({ openAsk }) {
           {paragraphs.map((para, i) => (
             <p key={i}>{para}</p>
           ))}
+          </div>
         </div>
 
         <div className="wr-article__sidebar">
-          {/* Article Characteristics */}
-          <div className="wr-inline-ask">
-            <h4>Article Characteristics</h4>
-            <div className="wr-inline-controls">
-              <div className="wr-inline-controls__row">
-                <span className="wr-inline-controls__label">Depth</span>
-                <div className="wr-seg">
-                  {READING_LEVELS.map((level) => (
-                    <button
-                      key={level}
-                      className={reading === level ? "is-active" : ""}
-                      onClick={() => setReading(level)}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="wr-inline-controls__row">
-                <span className="wr-inline-controls__label">Perspective</span>
-                <div className="wr-seg">
-                  {PERSPECTIVE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt}
-                      className={perspective === opt ? "is-active" : ""}
-                      onClick={() => setPerspective(opt)}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Article Chat */}
           <div className="wr-inline-ask wr-inline-ask--chat">
-            <h4>Article Chat</h4>
+            <div className="wr-chat-header">
+              <h4>Article Chat</h4>
+              <ArticleDropdown
+                label="Suggest"
+                icon={<SuggestIcon />}
+                options={FOLLOW_UPS}
+                value={null}
+                onChange={(q) => sendChat(q)}
+              />
+            </div>
 
-            {chatMessages.length === 0 ? (
-              <div className="wr-chat-empty">
-                <div className="wr-chip-row">
-                  {FOLLOW_UPS.map((q) => (
-                    <button key={q} className="wr-chip" onClick={() => sendChat(q)}>
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="wr-chat-msgs">
-                {chatMessages.map((m, i) => (
-                  <div key={i} className={`wr-msg ${m.role === "user" ? "is-user" : ""}`}>
-                    <div className="wr-msg__av" />
-                    <div className="wr-msg__body">
-                      <div className="wr-msg__lbl">{m.role === "user" ? "You" : "Brief AI"}</div>
-                      <div className="wr-msg__txt">{m.text}</div>
+            <div className="wr-chat-msgs">
+              {chatMessages.map((m, i) => (
+                <div key={i} className={`wr-msg ${m.role === "user" ? "is-user" : ""}`}>
+                  <div className="wr-msg__av" />
+                  <div className="wr-msg__body">
+                    <div className="wr-msg__lbl">{m.role === "user" ? "You" : "Brief AI"}</div>
+                    <div className="wr-msg__txt">
+                      {m.text || (chatStreaming && i === chatMessages.length - 1 ? "…" : "")}
                     </div>
                   </div>
-                ))}
-                <div ref={msgsEndRef} />
-              </div>
-            )}
+                </div>
+              ))}
+              <div ref={msgsEndRef} />
+            </div>
 
             <div className="wr-chat-compose">
               <div className="wr-composer">
@@ -192,8 +285,9 @@ function ArticleDetail({ openAsk }) {
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendChat()}
                   placeholder="Ask about this story…"
+                  disabled={chatStreaming}
                 />
-                <button onClick={() => sendChat()}>Ask</button>
+                <button onClick={() => sendChat()} disabled={chatStreaming}>Ask</button>
               </div>
             </div>
           </div>

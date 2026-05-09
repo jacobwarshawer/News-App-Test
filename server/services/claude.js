@@ -1,5 +1,5 @@
 const Anthropic = require("@anthropic-ai/sdk");
-const { MODELS, MAX_TOKENS, VARIANT_SYSTEM_PROMPT } = require("../constants");
+const { MODELS, MAX_TOKENS, VARIANT_SYSTEM_PROMPT, GENERATE_ARTICLE_SYSTEM_PROMPT } = require("../constants");
 
 const client = new Anthropic();
 
@@ -41,6 +41,38 @@ async function generateVariant(article, depth, perspective) {
   return { description: parsed.description, content: parsed.content };
 }
 
+async function generateArticle(category, depth, perspective) {
+  const message = await client.messages.create({
+    model: MODELS.VARIANT,
+    max_tokens: MAX_TOKENS.VARIANT,
+    system: GENERATE_ARTICLE_SYSTEM_PROMPT,
+    messages: [{
+      role: "user",
+      content: `Write a ${depth} depth, ${perspective} perspective news article for the ${category} section.`,
+    }],
+  });
+
+  const raw = message.content[0].text;
+  const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (parseErr) {
+    console.error("generateArticle JSON parse error. Raw response was:\n", raw);
+    throw parseErr;
+  }
+  if (!parsed.title || !parsed.content || !parsed.description) {
+    throw new Error("Missing fields in generateArticle response");
+  }
+  return {
+    title: parsed.title,
+    author: parsed.author,
+    readTime: parsed.readTime,
+    description: parsed.description,
+    content: parsed.content,
+  };
+}
+
 async function streamChat(systemPrompt, messages, { onText, onDone, onError }) {
   try {
     const stream = client.messages.stream({
@@ -58,4 +90,4 @@ async function streamChat(systemPrompt, messages, { onText, onDone, onError }) {
   }
 }
 
-module.exports = { generateVariant, streamChat };
+module.exports = { generateVariant, generateArticle, streamChat };

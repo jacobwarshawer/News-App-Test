@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-function ArticleCard({ article, reading, openAsk }) {
+function ArticleCard({ article, reading }) {
   const navigate = useNavigate();
 
   return (
@@ -20,16 +20,8 @@ function ArticleCard({ article, reading, openAsk }) {
         {article.category}
       </span>
       <h3>{article.title}</h3>
+      <p className="wr-card__desc">{article.description}</p>
       <span className="wr-card__meta">AI generated · {reading}</span>
-      <div className="wr-card__foot">
-        <span />
-        <button
-          className="wr-ask"
-          onClick={(e) => { e.stopPropagation(); openAsk(article); }}
-        >
-          Ask Brief AI <span aria-hidden="true">↗</span>
-        </button>
-      </div>
     </article>
   );
 }

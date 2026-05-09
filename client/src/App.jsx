@@ -9,6 +9,7 @@ import "./App.css";
 
 function App() {
   const [reading, setReading] = useState(DEFAULTS.READING);
+  const [articles, setArticles] = useState(null);
   const [askOpen, setAskOpen] = useState(false);
   const [askStory, setAskStory] = useState(null);
   const [askSeed, setAskSeed] = useState(null);
@@ -32,7 +33,8 @@ function App() {
                   <HomePage
                     reading={reading}
                     setReading={setReading}
-                    openAsk={openAsk}
+                    articles={articles}
+                    setArticles={setArticles}
                   />
                 }
               />

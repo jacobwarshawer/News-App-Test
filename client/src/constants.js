@@ -35,6 +35,9 @@ export const FOLLOW_UPS = [
   },
 ];
 
+export const EXPLAIN_PROMPT = (selectedText) =>
+  `Please explain this part of the article: "${selectedText}"`;
+
 export const AI_NAME = "Brief AI";
 
 export const CHAT_GREETING = "I've read this story. Ask me anything about it — I'll cite the sections I'm drawing from.";
@@ -43,6 +46,7 @@ export const API_PATHS = {
   ARTICLES: "/api/articles",
   ARTICLE: (id) => `/api/articles/${id}`,
   ARTICLE_CHAT: (id) => `/api/articles/${id}/chat`,
+  GENERATE_ARTICLE: "/api/articles/generate",
 };
 
 export const DEFAULTS = {

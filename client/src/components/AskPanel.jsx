@@ -1,5 +1,8 @@
+// Slide-in chat panel for asking questions about the current article
 import { useState, useEffect, useRef } from "react";
 import { AI_NAME, CHAT_GREETING, API_PATHS } from "../constants";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 function AskPanel({ open, story, seed, onClose }) {
   const [messages, setMessages] = useState([]);
@@ -7,6 +10,7 @@ function AskPanel({ open, story, seed, onClose }) {
   const [streaming, setStreaming] = useState(false);
   const msgsEndRef = useRef(null);
 
+  // Scroll to bottom whenever a new message is added or a streaming chunk arrives.
   useEffect(() => {
     msgsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -124,7 +128,13 @@ function AskPanel({ open, story, seed, onClose }) {
               <div className="wr-msg__body">
                 <div className="wr-msg__lbl">{m.role === "user" ? "You" : AI_NAME}</div>
                 <div className="wr-msg__txt">
-                  {m.text || (streaming && i === messages.length - 1 ? "…" : "")}
+                  {m.role === "ai" ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {m.text || (streaming && i === messages.length - 1 ? "…" : "")}
+                    </ReactMarkdown>
+                  ) : (
+                    m.text
+                  )}
                 </div>
               </div>
             </div>

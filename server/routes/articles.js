@@ -1,10 +1,19 @@
+// REST routes for article fetching and AI-powered variant/chat endpoints
 const express = require("express");
 const router = express.Router();
 const articles = require("../data/articles");
-const { generateVariant, streamChat } = require("../services/claude");
+const { generateVariant, generateArticle, streamChat } = require("../services/claude");
 const { buildChatSystemPrompt, DEFAULTS } = require("../constants");
 
 const variantCache = new Map();
+
+let nextGenId = 1000;
+const generatedArticles = new Map();
+
+function findArticle(id) {
+  const numId = parseInt(id, 10);
+  return articles.find((a) => a.id === numId) || generatedArticles.get(numId);
+}
 
 router.get("/", (req, res) => {
   const summaries = articles.map(
@@ -22,8 +31,31 @@ router.get("/", (req, res) => {
   res.json(summaries);
 });
 
+router.post("/generate", async (req, res) => {
+  const { category, depth = DEFAULTS.DEPTH, perspective = DEFAULTS.PERSPECTIVE } = req.body;
+  if (!category) return res.status(400).json({ error: "category is required" });
+
+  try {
+    const generated = await generateArticle(category, depth, perspective);
+    const id = nextGenId++;
+    const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const article = {
+      id,
+      ...generated,
+      category,
+      date: today,
+      imageUrl: `https://picsum.photos/seed/${category.toLowerCase()}${id}/800/450`,
+    };
+    generatedArticles.set(id, article);
+    res.json(article);
+  } catch (err) {
+    console.error("Article generation error:", err.message);
+    res.status(500).json({ error: "Failed to generate article" });
+  }
+});
+
 router.post("/:id/chat", async (req, res) => {
-  const article = articles.find((a) => a.id === parseInt(req.params.id));
+  const article = findArticle(req.params.id);
   if (!article) return res.status(404).json({ error: "Article not found" });
 
   const { messages } = req.body;
@@ -62,7 +94,7 @@ router.post("/:id/chat", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   console.log(`GET /api/articles/${req.params.id} depth=${req.query.depth} perspective=${req.query.perspective}`);
-  const article = articles.find((a) => a.id === parseInt(req.params.id));
+  const article = findArticle(req.params.id);
   if (!article) return res.status(404).json({ error: "Article not found" });
 
   const depth = req.query.depth || DEFAULTS.DEPTH;

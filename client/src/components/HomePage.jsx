@@ -1,104 +1,66 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ArticleCard from "./ArticleCard";
-import { CATEGORIES, READING_LEVELS, AI_NAME, DEFAULTS, API_PATHS } from "../constants";
-
-function perspectiveLabel(p) {
-  if (p < 0.20) return "Left-leaning";
-  if (p < 0.40) return "Center-left";
-  if (p < 0.60) return "Balanced";
-  if (p < 0.80) return "Center-right";
-  return "Right-leaning";
-}
+import Dropdown from "./Dropdown";
+import { CATEGORIES, READING_LEVELS, PERSPECTIVE_OPTIONS, DEFAULTS, API_PATHS } from "../constants";
 
 function tagClass(category) {
   return `wr-tag wr-tag--${category.toLowerCase()}`;
 }
 
-function ControlBar({ category, setCategory, reading, setReading, perspective, setPerspective }) {
-  const trackRef = useRef(null);
-  const drag = useRef(false);
+const CategoryIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="1" width="4.5" height="4.5" rx="1" />
+    <rect x="7.5" y="1" width="4.5" height="4.5" rx="1" />
+    <rect x="1" y="7.5" width="4.5" height="4.5" rx="1" />
+    <rect x="7.5" y="7.5" width="4.5" height="4.5" rx="1" />
+  </svg>
+);
 
-  const onTrack = (e) => {
-    const r = trackRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-    setPerspective(x);
-  };
+const ReadingIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+    <path d="M1 3h11M1 6.5h8M1 10h5" />
+  </svg>
+);
 
-  useEffect(() => {
-    const up = () => (drag.current = false);
-    window.addEventListener("mouseup", up);
-    return () => window.removeEventListener("mouseup", up);
-  }, []);
+const PerspectiveIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 6.5h11M4 3L1 6.5l3 3.5M9 3l3 3.5-3 3.5" />
+  </svg>
+);
 
-  return (
-    <section className="wr-controls" aria-label="Reader controls">
-      <div className="wr-controls__row">
-        <div className="wr-controls__label">Category</div>
-        <div className="wr-controls__field">
-          <div className="wr-seg">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                className={c === category ? "is-active" : ""}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="wr-controls__row">
-        <div className="wr-controls__label">Reading as</div>
-        <div className="wr-controls__field">
-          <div className="wr-seg">
-            {READING_LEVELS.map((r) => (
-              <button
-                key={r}
-                className={r === reading ? "is-active" : ""}
-                onClick={() => setReading(r)}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="wr-controls__row">
-        <div className="wr-controls__label">Perspective</div>
-        <div className="wr-controls__field">
-          <div className="wr-slider">
-            <span className="wr-slider__end">Left</span>
-            <div
-              className="wr-slider__track"
-              ref={trackRef}
-              onMouseDown={(e) => { drag.current = true; onTrack(e); }}
-              onMouseMove={(e) => { if (drag.current) onTrack(e); }}
-              onClick={onTrack}
-            >
-              <div className="wr-slider__fill" style={{ width: `${perspective * 100}%` }} />
-              <div className="wr-slider__thumb" style={{ left: `${perspective * 100}%` }} />
-            </div>
-            <span className="wr-slider__end">Right</span>
-            <span className="wr-slider__pill">{perspectiveLabel(perspective)}</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HomePage({ reading, setReading, openAsk }) {
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
+function HomePage({ reading, setReading, articles, setArticles }) {
+  const [loading, setLoading] = useState(articles === null);
   const [error, setError] = useState(null);
   const [category, setCategory] = useState(DEFAULTS.CATEGORY);
-  const [perspective, setPerspective] = useState(0.5);
+  const [perspective, setPerspective] = useState(DEFAULTS.PERSPECTIVE);
+  const [generating, setGenerating] = useState(false);
 
   const navigate = useNavigate();
 
+  async function handleGenerate() {
+    setGenerating(true);
+    const contentCategories = CATEGORIES.filter((c) => c !== "All");
+    try {
+      const results = await Promise.all(
+        contentCategories.map((cat) =>
+          fetch(API_PATHS.GENERATE_ARTICLE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ category: cat, depth: reading, perspective }),
+          }).then((r) => r.json())
+        )
+      );
+      setArticles(results);
+    } catch (err) {
+      console.error("Generation failed:", err);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   useEffect(() => {
+    if (articles !== null) return;
     fetch(API_PATHS.ARTICLES)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load articles");
@@ -116,11 +78,14 @@ function HomePage({ reading, setReading, openAsk }) {
 
   return (
     <>
-      <ControlBar
-        category={category} setCategory={setCategory}
-        reading={reading}   setReading={setReading}
-        perspective={perspective} setPerspective={setPerspective}
-      />
+      <div className="wr-controls" role="toolbar" aria-label="Reader controls">
+        <Dropdown label="Category"    icon={<CategoryIcon />}    options={CATEGORIES}          value={category}    onChange={setCategory} />
+        <Dropdown label="Depth"     icon={<ReadingIcon />}     options={READING_LEVELS}      value={reading}     onChange={setReading} />
+        <Dropdown label="Perspective" icon={<PerspectiveIcon />} options={PERSPECTIVE_OPTIONS} value={perspective} onChange={setPerspective} />
+        <button className="wr-generate-btn" onClick={handleGenerate} disabled={generating}>
+          {generating ? "Generating…" : "Generate"}
+        </button>
+      </div>
 
       {hero ? (
         <>
@@ -139,13 +104,6 @@ function HomePage({ reading, setReading, openAsk }) {
                 <span className="wr-card__meta">
                   AI generated · {reading} · Just now
                 </span>
-                <button
-                  className="wr-ask"
-                  onClick={(e) => { e.stopPropagation(); openAsk(hero); }}
-                >
-                  <span className="wr-ask__dot" />
-                  Ask {AI_NAME} about this
-                </button>
               </div>
             </div>
           </article>
@@ -161,7 +119,7 @@ function HomePage({ reading, setReading, openAsk }) {
           <div className="wr-eyebrow">More stories</div>
           <div className="wr-grid">
             {rest.map((a) => (
-              <ArticleCard key={a.id} article={a} reading={reading} openAsk={openAsk} />
+              <ArticleCard key={a.id} article={a} reading={reading} />
             ))}
           </div>
         </>

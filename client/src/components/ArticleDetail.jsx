@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { READING_LEVELS, PERSPECTIVE_OPTIONS, FOLLOW_UPS, AI_NAME, DEFAULTS, API_PATHS } from "../constants";
+import { READING_LEVELS, PERSPECTIVE_OPTIONS, FOLLOW_UPS, AI_NAME, DEFAULTS, API_PATHS, EXPLAIN_PROMPT } from "../constants";
+import Dropdown from "./Dropdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const DepthIcon = () => (
   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
@@ -20,48 +23,6 @@ const SuggestIcon = () => (
   </svg>
 );
 
-function ArticleDropdown({ label, icon, options, value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  return (
-    <div className="wr-ctrl-drop" ref={ref}>
-      <button
-        className={`wr-ctrl-drop__btn${open ? " is-open" : ""}`}
-        onClick={() => setOpen((o) => !o)}
-      >
-        {icon}
-        <span className="wr-ctrl-drop__label">{label}</span>
-        {value !== null && <span className="wr-ctrl-drop__sep">·</span>}
-        {value !== null && <span className="wr-ctrl-drop__val">{value}</span>}
-        <svg className="wr-ctrl-drop__chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 3.5l3 3 3-3" />
-        </svg>
-      </button>
-      {open && (
-        <div className="wr-ctrl-drop__menu">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              className={`wr-ctrl-drop__item${value === opt ? " is-active" : ""}`}
-              onClick={() => { onChange(opt); setOpen(false); }}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function ArticleDetail({ openAsk }) {
   const { id } = useParams();
@@ -80,6 +41,13 @@ function ArticleDetail({ openAsk }) {
   const msgsEndRef = useRef(null);
   const mainRef = useRef(null);
   const prevIdRef = useRef(null);
+
+  // Highlight-to-explain state
+  const [explainPos, setExplainPos] = useState(null);
+  const [explainText, setExplainText] = useState("");
+
+  const [generating, setGenerating] = useState(false);
+  const articleBodyRef = useRef(null);
 
   useEffect(() => {
     msgsEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,6 +82,14 @@ function ArticleDetail({ openAsk }) {
         setVariantLoading(false);
       });
   }, [id, reading, perspective]);
+
+  useEffect(() => {
+    function onMouseDown(e) {
+      if (!e.target.closest(".wr-explain-btn")) setExplainPos(null);
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
 
   if (loading) return <div className="loading-state"><div className="spinner" />Loading article…</div>;
   if (error || !article) return (
@@ -185,6 +161,44 @@ function ArticleDetail({ openAsk }) {
     }
   };
 
+  async function handleGenerate() {
+    if (generating || !article) return;
+    setGenerating(true);
+    try {
+      const res = await fetch(API_PATHS.GENERATE_ARTICLE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: article.category, depth: reading, perspective }),
+      });
+      if (!res.ok) throw new Error("Generation failed");
+      const newArticle = await res.json();
+      navigate(`/article/${newArticle.id}`);
+    } catch (err) {
+      console.error("Generation failed:", err);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  function handleSelectionChange() {
+    const sel = window.getSelection();
+    const text = sel?.toString().trim();
+    if (!text) { setExplainPos(null); return; }
+    if (!articleBodyRef.current?.contains(sel.anchorNode)) { setExplainPos(null); return; }
+    const rects = sel.getRangeAt(0).getClientRects();
+    if (!rects.length) { setExplainPos(null); return; }
+    const last = rects[rects.length - 1];
+    setExplainText(text);
+    setExplainPos({ top: last.bottom + 6, left: last.right });
+  }
+
+  function handleExplain() {
+    const prompt = EXPLAIN_PROMPT(explainText);
+    setExplainPos(null);
+    window.getSelection()?.removeAllRanges();
+    sendChat(prompt);
+  }
+
   return (
     <article className="wr-article">
       <div className="wr-article__layout">
@@ -198,20 +212,27 @@ function ArticleDetail({ openAsk }) {
             </button>
             <div className="wr-article__topbar-div" />
             <div className="wr-article__controls">
-              <ArticleDropdown
+              <Dropdown
                 label="Depth"
                 icon={<DepthIcon />}
                 options={READING_LEVELS}
                 value={reading}
                 onChange={setReading}
               />
-              <ArticleDropdown
+              <Dropdown
                 label="Perspective"
                 icon={<PerspectiveIcon />}
                 options={PERSPECTIVE_OPTIONS}
                 value={perspective}
                 onChange={setPerspective}
               />
+              <button
+                className="wr-generate-btn"
+                onClick={handleGenerate}
+                disabled={generating || variantLoading}
+              >
+                {generating ? "Generating…" : "Generate"}
+              </button>
             </div>
           </div>
 
@@ -231,9 +252,11 @@ function ArticleDetail({ openAsk }) {
             <span className="meta">{article.date} · {article.readTime}</span>
           </div>
 
-          {paragraphs.map((para, i) => (
-            <p key={i}>{para}</p>
-          ))}
+          <div ref={articleBodyRef} onMouseUp={handleSelectionChange}>
+            {paragraphs.map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
           </div>
         </div>
 
@@ -242,7 +265,7 @@ function ArticleDetail({ openAsk }) {
           <div className="wr-inline-ask wr-inline-ask--chat">
             <div className="wr-chat-header">
               <h4>Article Chat</h4>
-              <ArticleDropdown
+              <Dropdown
                 label="Suggest"
                 icon={<SuggestIcon />}
                 options={FOLLOW_UPS.map((f) => f.label)}
@@ -258,7 +281,13 @@ function ArticleDetail({ openAsk }) {
                   <div className="wr-msg__body">
                     <div className="wr-msg__lbl">{m.role === "user" ? "You" : AI_NAME}</div>
                     <div className="wr-msg__txt">
-                      {m.text || (chatStreaming && i === chatMessages.length - 1 ? "…" : "")}
+                      {m.role === "ai" ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {m.text || (chatStreaming && i === chatMessages.length - 1 ? "…" : "")}
+                        </ReactMarkdown>
+                      ) : (
+                        m.text
+                      )}
                     </div>
                   </div>
                 </div>
@@ -281,6 +310,16 @@ function ArticleDetail({ openAsk }) {
           </div>
         </div>
       </div>
+      {explainPos && (
+        <button
+          className="wr-explain-btn"
+          style={{ top: explainPos.top, left: explainPos.left }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={handleExplain}
+        >
+          Explain
+        </button>
+      )}
     </article>
   );
 }

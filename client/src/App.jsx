@@ -4,10 +4,11 @@ import Header from "./components/Header";
 import HomePage from "./components/HomePage";
 import ArticleDetail from "./components/ArticleDetail";
 import AskPanel from "./components/AskPanel";
+import { DEFAULTS } from "./constants";
 import "./App.css";
 
 function App() {
-  const [reading, setReading] = useState("Neutral");
+  const [reading, setReading] = useState(DEFAULTS.READING);
   const [askOpen, setAskOpen] = useState(false);
   const [askStory, setAskStory] = useState(null);
   const [askSeed, setAskSeed] = useState(null);

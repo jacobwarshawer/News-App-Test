@@ -1,18 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
-const FOLLOW_UPS = [
-  "Summarize in one paragraph",
-  "What's the background?",
-  "Who are the key players?",
-  "Read in 1 minute",
-  "How does this connect to other issues?",
-  "What questions should I be asking?",
-  "Further reading",
-];
-
-const READING_LEVELS = ["Low", "Medium", "High"];
-const PERSPECTIVE_OPTIONS = ["Left", "Center", "Right"];
+import { READING_LEVELS, PERSPECTIVE_OPTIONS, FOLLOW_UPS, AI_NAME, DEFAULTS, API_PATHS } from "../constants";
 
 const DepthIcon = () => (
   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
@@ -82,8 +70,8 @@ function ArticleDetail({ openAsk }) {
   const [loading, setLoading] = useState(true);
   const [variantLoading, setVariantLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [reading, setReading] = useState("Medium");
-  const [perspective, setPerspective] = useState("Center");
+  const [reading, setReading] = useState(DEFAULTS.READING);
+  const [perspective, setPerspective] = useState(DEFAULTS.PERSPECTIVE);
 
   // Inline chat state
   const [chatMessages, setChatMessages] = useState([]);
@@ -109,7 +97,7 @@ function ArticleDetail({ openAsk }) {
     }
 
     console.log(`Fetching: /api/articles/${id}?depth=${reading}&perspective=${perspective}`);
-    fetch(`/api/articles/${id}?depth=${reading}&perspective=${perspective}`)
+    fetch(`${API_PATHS.ARTICLE(id)}?depth=${reading}&perspective=${perspective}`)
       .then((res) => {
         if (!res.ok) throw new Error("Article not found");
         return res.json();
@@ -149,7 +137,7 @@ function ArticleDetail({ openAsk }) {
     setChatStreaming(true);
 
     try {
-      const res = await fetch(`/api/articles/${id}/chat`, {
+      const res = await fetch(API_PATHS.ARTICLE_CHAT(id), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages }),
@@ -237,7 +225,7 @@ function ArticleDetail({ openAsk }) {
           <div className="wr-article__byline">
             {variantLoading
               ? <span className="label label--generating">Generating {reading} · {perspective}…</span>
-              : <span className="label">Brief AI</span>
+              : <span className="label">{AI_NAME}</span>
             }
             <span>· Depth: <strong>{reading}</strong> · Perspective: <strong>{perspective}</strong></span>
             <span className="meta">{article.date} · {article.readTime}</span>
@@ -257,9 +245,9 @@ function ArticleDetail({ openAsk }) {
               <ArticleDropdown
                 label="Suggest"
                 icon={<SuggestIcon />}
-                options={FOLLOW_UPS}
+                options={FOLLOW_UPS.map((f) => f.label)}
                 value={null}
-                onChange={(q) => sendChat(q)}
+                onChange={(label) => sendChat(FOLLOW_UPS.find((f) => f.label === label).prompt)}
               />
             </div>
 
@@ -268,7 +256,7 @@ function ArticleDetail({ openAsk }) {
                 <div key={i} className={`wr-msg ${m.role === "user" ? "is-user" : ""}`}>
                   <div className="wr-msg__av" />
                   <div className="wr-msg__body">
-                    <div className="wr-msg__lbl">{m.role === "user" ? "You" : "Brief AI"}</div>
+                    <div className="wr-msg__lbl">{m.role === "user" ? "You" : AI_NAME}</div>
                     <div className="wr-msg__txt">
                       {m.text || (chatStreaming && i === chatMessages.length - 1 ? "…" : "")}
                     </div>

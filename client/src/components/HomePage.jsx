@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ArticleCard from "./ArticleCard";
-
-const CATEGORIES = ["All", "Politics", "Technology", "World", "Economy", "Science"];
-const READING_LEVELS = ["Neutral", "Simple", "In-depth"];
+import { CATEGORIES, READING_LEVELS, AI_NAME, DEFAULTS, API_PATHS } from "../constants";
 
 function perspectiveLabel(p) {
   if (p < 0.20) return "Left-leaning";
@@ -95,13 +93,13 @@ function HomePage({ reading, setReading, openAsk }) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [category, setCategory] = useState("All");
+  const [category, setCategory] = useState(DEFAULTS.CATEGORY);
   const [perspective, setPerspective] = useState(0.5);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/articles")
+    fetch(API_PATHS.ARTICLES)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load articles");
         return res.json();
@@ -146,7 +144,7 @@ function HomePage({ reading, setReading, openAsk }) {
                   onClick={(e) => { e.stopPropagation(); openAsk(hero); }}
                 >
                   <span className="wr-ask__dot" />
-                  Ask Brief AI about this
+                  Ask {AI_NAME} about this
                 </button>
               </div>
             </div>

@@ -20,9 +20,7 @@ function Header() {
       </div>
       <nav className="wr-header__nav">
         <Link to="/">Home</Link>
-        <Link to="/">Topics</Link>
-        <Link to="/">Sources</Link>
-        <Link to="/">Saved</Link>
+        <Link to="/upload">Upload</Link>
         <span className="wr-header__live">Live</span>
         <span className="wr-header__date">{today}</span>
       </nav>

@@ -144,11 +144,13 @@ function AskPanel({ open, story, seed, onClose }) {
 
         <div className="wr-ask-panel__compose">
           <form onSubmit={send}>
-            <input
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(e); } }}
               placeholder="Ask a follow-up…"
               disabled={streaming}
+              rows={1}
             />
             <button type="submit" disabled={streaming}>Ask</button>
           </form>

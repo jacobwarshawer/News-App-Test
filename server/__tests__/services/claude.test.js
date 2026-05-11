@@ -3,6 +3,7 @@ jest.mock("@anthropic-ai/sdk");
 const Anthropic = require("@anthropic-ai/sdk");
 
 const mockCreate = jest.fn();
+const mockCountTokens = jest.fn().mockResolvedValue({ input_tokens: 42 });
 const mockStreamOn = jest.fn();
 const mockFinalMessage = jest.fn().mockResolvedValue({});
 const mockStream = { on: mockStreamOn, finalMessage: mockFinalMessage };
@@ -10,6 +11,7 @@ const mockStream = { on: mockStreamOn, finalMessage: mockFinalMessage };
 Anthropic.mockImplementation(() => ({
   messages: {
     create: mockCreate,
+    countTokens: mockCountTokens,
     stream: jest.fn().mockReturnValue(mockStream),
   },
 }));

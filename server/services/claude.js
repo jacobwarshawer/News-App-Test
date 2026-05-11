@@ -1,12 +1,11 @@
 const Anthropic = require("@anthropic-ai/sdk");
-const { MODELS, MAX_TOKENS, VARIANT_SYSTEM_PROMPT, GENERATE_ARTICLE_SYSTEM_PROMPT } = require("../constants");
+const { MODELS, MAX_TOKENS, SUMMARIZE_INPUT_CHARS, VARIANT_SYSTEM_PROMPT, GENERATE_ARTICLE_SYSTEM_PROMPT, SUMMARIZE_DOC_SYSTEM_PROMPT } = require("../constants");
 
 const client = new Anthropic();
 
 async function generateVariant(article, depth, perspective) {
-  const message = await client.messages.create({
+  const variantParams = {
     model: MODELS.VARIANT,
-    max_tokens: MAX_TOKENS.VARIANT,
     system: VARIANT_SYSTEM_PROMPT,
     messages: [
       {
@@ -24,7 +23,10 @@ async function generateVariant(article, depth, perspective) {
         ],
       },
     ],
-  });
+  };
+  const tokenCount = await client.messages.countTokens(variantParams);
+  console.log("[generateVariant] input tokens:", tokenCount.input_tokens);
+  const message = await client.messages.create({ ...variantParams, max_tokens: MAX_TOKENS.VARIANT });
 
   const raw = message.content[0].text;
   const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
@@ -42,15 +44,17 @@ async function generateVariant(article, depth, perspective) {
 }
 
 async function generateArticle(category, depth, perspective) {
-  const message = await client.messages.create({
+  const articleParams = {
     model: MODELS.VARIANT,
-    max_tokens: MAX_TOKENS.VARIANT,
     system: GENERATE_ARTICLE_SYSTEM_PROMPT,
     messages: [{
       role: "user",
       content: `Write a ${depth} depth, ${perspective} perspective news article for the ${category} section.`,
     }],
-  });
+  };
+  const tokenCount = await client.messages.countTokens(articleParams);
+  console.log("[generateArticle] input tokens:", tokenCount.input_tokens);
+  const message = await client.messages.create({ ...articleParams, max_tokens: MAX_TOKENS.VARIANT });
 
   const raw = message.content[0].text;
   const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
@@ -73,8 +77,21 @@ async function generateArticle(category, depth, perspective) {
   };
 }
 
+async function summarizeDocument(text) {
+  const input = text.length > SUMMARIZE_INPUT_CHARS ? text.slice(0, SUMMARIZE_INPUT_CHARS) : text;
+  const message = await client.messages.create({
+    model: MODELS.VARIANT,
+    max_tokens: MAX_TOKENS.SUMMARY,
+    system: SUMMARIZE_DOC_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: input }],
+  });
+  return message.content[0].text;
+}
+
 async function streamChat(systemPrompt, messages, { onText, onDone, onError }) {
   try {
+    const tokenCount = await client.messages.countTokens({ model: MODELS.CHAT, system: systemPrompt, messages });
+    console.log("[streamChat] input tokens:", tokenCount.input_tokens);
     const stream = client.messages.stream({
       model: MODELS.CHAT,
       max_tokens: MAX_TOKENS.CHAT,
@@ -90,4 +107,4 @@ async function streamChat(systemPrompt, messages, { onText, onDone, onError }) {
   }
 }
 
-module.exports = { generateVariant, generateArticle, streamChat };
+module.exports = { generateVariant, generateArticle, summarizeDocument, streamChat };

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import HomePage from "./components/HomePage";
 import ArticleDetail from "./components/ArticleDetail";
+import UploadPage from "./components/UploadPage";
 import AskPanel from "./components/AskPanel";
 import { DEFAULTS } from "./constants";
 import "./App.css";
@@ -42,6 +43,7 @@ function App() {
                 path="/article/:id"
                 element={<ArticleDetail openAsk={openAsk} />}
               />
+              <Route path="/upload" element={<UploadPage />} />
             </Routes>
           </div>
         </div>

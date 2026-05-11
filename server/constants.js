@@ -10,7 +10,15 @@ const MODELS = {
 const MAX_TOKENS = {
   VARIANT: 2048,
   CHAT: 1024,
+  SUMMARY: 4096,
 };
+
+// PDFs above this char count are summarized before chat to stay under the 200k token context limit.
+const LARGE_DOC_CHAR_THRESHOLD = 400_000;
+
+// Max chars fed into summarizeDocument. At ~3 chars/token (dense PDFs), 450k ≈ 150k tokens,
+// leaving a comfortable 50k token margin under Haiku's 200k context window.
+const SUMMARIZE_INPUT_CHARS = 450_000;
 
 // These match the default selections shown in the article view dropdowns.
 const DEFAULTS = {
@@ -65,4 +73,11 @@ function buildChatSystemPrompt(title, content) {
   return `You are Brief AI, an assistant for The Daily Brief news publication. Help readers understand the following article. Answer questions as accurately as you can. Keep responses concise. Do not invent facts not present in the article, but you can use whatever knowledge you do have. Be conservative in what information you give. If you are being speculative, inform the user of that.\n\nArticle: "${title}"\n\n${content}`;
 }
 
-module.exports = { MODELS, MAX_TOKENS, DEFAULTS, VARIANT_SYSTEM_PROMPT, GENERATE_ARTICLE_SYSTEM_PROMPT, buildChatSystemPrompt };
+const SUMMARIZE_DOC_SYSTEM_PROMPT = `You are a document analyst. Produce a detailed, structured summary of the document below. Capture every major topic, key finding, specific fact, figure, name, date, and conclusion that a reader might later ask about. Be thorough — this summary will be the sole basis for answering questions about the document.`;
+
+// Same as buildChatSystemPrompt but scoped to user-uploaded documents rather than articles.
+function buildUploadChatSystemPrompt(filename, content) {
+  return `You are Brief AI, an assistant for The Daily Brief. Help the user understand the following uploaded document. Answer questions as accurately as you can. Keep responses concise. Do not invent facts not present in the document, but you can use whatever knowledge you do have. Be conservative in what information you give. If you are being speculative, inform the user of that.\n\nDocument: "${filename}"\n\n${content}`;
+}
+
+module.exports = { MODELS, MAX_TOKENS, DEFAULTS, LARGE_DOC_CHAR_THRESHOLD, SUMMARIZE_INPUT_CHARS, VARIANT_SYSTEM_PROMPT, GENERATE_ARTICLE_SYSTEM_PROMPT, SUMMARIZE_DOC_SYSTEM_PROMPT, buildChatSystemPrompt, buildUploadChatSystemPrompt };
